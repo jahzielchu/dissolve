@@ -15,6 +15,7 @@ type Profile = {
   display_name: string
   compatibility: number
   topFilms: string[]
+  avatar_url: string | null
 }
 
 export default function Dashboard() {
@@ -45,7 +46,7 @@ export default function Dashboard() {
 
     const { data: otherProfiles } = await supabase
       .from('profiles')
-      .select('id, letterboxd_username, display_name')
+      .select('id, letterboxd_username, display_name, avatar_url')
       .neq('id', user!.id)
 
     if (!otherProfiles) { setLoading(false); return }
@@ -76,7 +77,7 @@ export default function Dashboard() {
           const compatibility = total > 0 ? Math.round((overlap / total) * 100) : 0
           const topFilms = Array.from(theirMap.keys()).slice(0, 3).map(s => s.replace(/-/g, ' '))
 
-          return { ...profile, compatibility, topFilms }
+          return { ...profile, compatibility, topFilms, avatar_url: profile.avatar_url || null }
         })
     )
 
@@ -150,10 +151,19 @@ export default function Dashboard() {
           swiping === 'left' ? '-translate-x-24 opacity-0' : ''
         }`}>
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold">{profile.display_name}</h2>
-              <p className="text-gray-400 text-sm">@{profile.letterboxd_username}</p>
-            </div>
+            <div className="flex items-center gap-3">
+  {profile.avatar_url ? (
+    <img src={profile.avatar_url} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover" />
+  ) : (
+    <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl">
+      🎬
+    </div>
+  )}
+  <div>
+    <h2 className="text-xl font-bold">{profile.display_name}</h2>
+    <p className="text-gray-400 text-sm">@{profile.letterboxd_username}</p>
+  </div>
+</div>
             <div className="bg-white text-black rounded-full px-3 py-1 text-sm font-bold">
               {profile.compatibility}% match
             </div>
