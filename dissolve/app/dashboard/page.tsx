@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user) loadProfiles()
-  }, [user])
+ }, [user?.id])
 
   async function loadProfiles() {
     setLoading(true)
