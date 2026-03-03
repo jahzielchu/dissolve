@@ -1,5 +1,5 @@
 'use client'
-
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
@@ -139,8 +139,12 @@ export default function Dashboard() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">Dissolve</h1>
-
+<div className="flex items-center justify-between mb-6">
+  <h1 className="text-2xl font-bold">Dissolve</h1>
+  <Link href="/matches" className="text-gray-400 hover:text-white transition text-sm">
+    Matches
+  </Link>
+</div>
         <div className={`bg-gray-900 rounded-2xl p-6 mb-6 transition-all duration-300 ${
           swiping === 'right' ? 'translate-x-24 opacity-0' : 
           swiping === 'left' ? '-translate-x-24 opacity-0' : ''
