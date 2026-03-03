@@ -77,7 +77,8 @@ export default function Dashboard() {
 
   if (loading) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <p className="text-xs uppercase tracking-widest text-gray-500">Loading...</p>
+      <Link href="/profile" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition" style={{ fontFamily: 'Georgia, serif' }}>Dissolve</Link>
+
     </main>
   )
 
