@@ -77,8 +77,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <Link href="/profile" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition" style={{ fontFamily: 'Georgia, serif' }}>Dissolve</Link>
-
+      <p className="text-xs uppercase tracking-widest text-gray-500">Loading...</p>
     </main>
   )
 
@@ -91,9 +90,14 @@ export default function Dashboard() {
         <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">End of reel</p>
         <p className="text-2xl font-black" style={{ fontFamily: 'Georgia, serif' }}>No more profiles</p>
         <p className="text-gray-500 mt-2 text-sm">Check back later for new cinephiles</p>
-        <Link href="/matches" className="mt-8 inline-block text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">
-          View Matches
-        </Link>
+        <div className="flex gap-4 justify-center mt-8">
+          <Link href="/matches" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">
+            View Matches
+          </Link>
+          <Link href="/profile" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">
+            Your Profile
+          </Link>
+        </div>
       </div>
     </main>
   )
@@ -102,26 +106,25 @@ export default function Dashboard() {
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden px-6">
-      {/* Film grain */}
       <div className="pointer-events-none fixed inset-0 z-10 opacity-[0.025]"
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`, backgroundRepeat: 'repeat', backgroundSize: '128px 128px' }}
       />
 
       <div className="relative z-20 w-full max-w-sm">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
+          <Link href="/profile" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">
+            Profile
+          </Link>
           <p className="text-xs uppercase tracking-widest text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Dissolve</p>
           <Link href="/matches" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">
             Matches
           </Link>
         </div>
 
-        {/* Card */}
         <div className={`border border-gray-800 rounded-none p-6 mb-8 transition-all duration-300 ${
           swiping === 'right' ? 'translate-x-24 opacity-0' :
           swiping === 'left' ? '-translate-x-24 opacity-0' : ''
         }`}>
-          {/* Profile header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               {profile.avatar_url ? (
@@ -130,13 +133,13 @@ export default function Dashboard() {
                 <div className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-lg">🎬</div>
               )}
               <div>
-                <a 
-  href={`/user/${profile.id}`}
-  onClick={(e) => e.stopPropagation()}
-  className="hover:underline cursor-pointer"
->
-  <h2 className="font-black text-lg" style={{ fontFamily: 'Georgia, serif' }}>{profile.display_name}</h2>
-</a>
+                <h2
+                  className="font-black text-lg cursor-pointer hover:underline"
+                  style={{ fontFamily: 'Georgia, serif' }}
+                  onClick={() => window.location.href = `/user/${profile.id}`}
+                >
+                  {profile.display_name}
+                </h2>
                 <p className="text-gray-500 text-xs tracking-wider">@{profile.letterboxd_username}</p>
               </div>
             </div>
@@ -146,10 +149,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="border-t border-gray-800 mb-4" />
 
-          {/* Top films */}
           <div>
             <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">Top Films</p>
             <div className="flex flex-col gap-2">
@@ -162,7 +163,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Swipe buttons */}
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => swipe('pass')}
