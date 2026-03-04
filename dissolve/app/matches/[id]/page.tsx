@@ -25,6 +25,7 @@ export default function Chat() {
   const matchId = params.id as string
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
+  const [otherId, setOtherId] = useState<string | null>(null)
   const [otherUser, setOtherUser] = useState<{ display_name: string, letterboxd_username: string, avatar_url: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -45,8 +46,9 @@ export default function Chat() {
     setLoading(true)
     const { data: match } = await supabase.from('matches').select('user1_id, user2_id').eq('id', matchId).single()
     if (!match) { router.push('/matches'); return }
-    const otherId = match.user1_id === user!.id ? match.user2_id : match.user1_id
-    const { data: profile } = await supabase.from('profiles').select('display_name, letterboxd_username, avatar_url').eq('id', otherId).single()
+    const otherUserId = match.user1_id === user!.id ? match.user2_id : match.user1_id
+    setOtherId(otherUserId)
+    const { data: profile } = await supabase.from('profiles').select('display_name, letterboxd_username, avatar_url').eq('id', otherUserId).single()
     setOtherUser(profile)
     const { data: msgs } = await supabase.from('messages').select('*').eq('match_id', matchId).order('created_at', { ascending: true })
     setMessages(msgs || [])
@@ -77,10 +79,9 @@ export default function Chat() {
 
   return (
     <main className="flex flex-col h-screen bg-black text-white">
-      {/* Header */}
       <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-800">
         <Link href="/matches" className="text-gray-500 hover:text-white transition text-xs uppercase tracking-widest">← Back</Link>
-        <div className="flex items-center gap-3">
+        <Link href={`/user/${otherId}`} className="flex items-center gap-3 hover:opacity-80 transition">
           {otherUser?.avatar_url ? (
             <img src={otherUser.avatar_url} alt={otherUser.display_name} className="w-8 h-8 rounded-full object-cover" />
           ) : (
@@ -90,10 +91,9 @@ export default function Chat() {
             <p className="font-black text-sm" style={{ fontFamily: 'Georgia, serif' }}>{otherUser?.display_name}</p>
             <p className="text-gray-500 text-xs">@{otherUser?.letterboxd_username}</p>
           </div>
-        </div>
+        </Link>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-3">
         {messages.length === 0 && (
           <div className="text-center py-16">
@@ -113,7 +113,6 @@ export default function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className="px-6 py-4 border-t border-gray-800 flex gap-3">
         <input
           type="text"
