@@ -156,7 +156,7 @@ export default function Profile() {
           </button>
 
           <button
-            onClick={() => signOut(() => window.location.href = '/')}
+            onClick={() => signOut()}
             className="w-full py-3 text-xs uppercase tracking-widest text-red-500 border border-red-900 hover:border-red-500 transition"
           >
             Sign Out
