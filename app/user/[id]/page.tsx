@@ -43,7 +43,7 @@ export default function UserProfile() {
       <div className="max-w-md w-full mx-auto">
 
         <Link href="/dashboard" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition mb-12 inline-block">
-          ← Back
+          Back
         </Link>
 
         <div className="flex items-center gap-6 mb-8">
@@ -54,14 +54,7 @@ export default function UserProfile() {
           )}
           <div>
             <h1 className="text-3xl font-black" style={{ fontFamily: 'Georgia, serif' }}>{profile.display_name}</h1>
-            
-              href={`https://letterboxd.com/${profile.letterboxd_username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-500 text-xs tracking-wider hover:text-white transition"
-            >
-              @{profile.letterboxd_username}
-            </a>
+            <p className="text-gray-500 text-xs tracking-wider">@{profile.letterboxd_username}</p>
           </div>
         </div>
 
