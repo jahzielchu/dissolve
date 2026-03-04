@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useUser, useClerk } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 
@@ -21,6 +21,7 @@ type Match = {
 
 export default function Profile() {
   const { user } = useUser()
+  const { signOut } = useClerk()
   const [profile, setProfile] = useState<any>(null)
   const [matches, setMatches] = useState<Match[]>([])
   const [displayName, setDisplayName] = useState('')
@@ -34,19 +35,13 @@ export default function Profile() {
   }, [user?.id])
 
   async function loadProfile() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user!.id)
-      .single()
-
+    const { data } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
     if (data) {
       setProfile(data)
       setDisplayName(data.display_name || '')
       setBio(data.bio || '')
     }
 
-    // Load matches
     const { data: matchData } = await supabase
       .from('matches')
       .select('id, user1_id, user2_id')
@@ -74,10 +69,7 @@ export default function Profile() {
   async function saveProfile() {
     if (!user) return
     setSaving(true)
-    await supabase.from('profiles').update({
-      display_name: displayName,
-      bio,
-    }).eq('id', user.id)
+    await supabase.from('profiles').update({ display_name: displayName, bio }).eq('id', user.id)
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -87,26 +79,14 @@ export default function Profile() {
     const file = e.target.files?.[0]
     if (!file || !user) return
     setUploading(true)
-
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}.${fileExt}`
-
-    const { error } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, { upsert: true })
-
+    const { error } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true })
     if (!error) {
-      const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName)
-
-      await supabase.from('profiles').update({
-        avatar_url: urlData.publicUrl
-      }).eq('id', user.id)
-
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      await supabase.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', user.id)
       setProfile((prev: any) => ({ ...prev, avatar_url: urlData.publicUrl }))
     }
-
     setUploading(false)
   }
 
@@ -114,7 +94,6 @@ export default function Profile() {
     <main className="flex min-h-screen flex-col bg-black text-white px-6 py-12">
       <div className="max-w-md w-full mx-auto">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">Dissolve</p>
@@ -125,7 +104,6 @@ export default function Profile() {
           </Link>
         </div>
 
-        {/* Photo upload */}
         <div className="flex items-center gap-6 mb-10">
           <div className="relative">
             {profile?.avatar_url ? (
@@ -143,7 +121,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Edit fields */}
         <div className="flex flex-col gap-4 mb-10">
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Display Name</p>
@@ -167,9 +144,7 @@ export default function Profile() {
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Letterboxd</p>
-            <p className="text-sm text-gray-400 border border-gray-800 px-4 py-3">
-              @{profile?.letterboxd_username || '—'}
-            </p>
+            <p className="text-sm text-gray-400 border border-gray-800 px-4 py-3">@{profile?.letterboxd_username || '—'}</p>
           </div>
 
           <button
@@ -179,9 +154,15 @@ export default function Profile() {
           >
             {saved ? 'Saved!' : saving ? 'Saving...' : 'Save Profile'}
           </button>
+
+          <button
+            onClick={() => signOut(() => window.location.href = '/')}
+            className="w-full py-3 text-xs uppercase tracking-widest text-red-500 border border-red-900 hover:border-red-500 transition"
+          >
+            Sign Out
+          </button>
         </div>
 
-        {/* Matches */}
         <div>
           <p className="text-xs uppercase tracking-widest text-gray-500 mb-4">Your Matches</p>
           {matches.length === 0 ? (
