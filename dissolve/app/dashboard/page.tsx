@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState<'left' | 'right' | null>(null)
+  const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null)
 
   useEffect(() => {
     if (user) loadProfiles()
@@ -69,7 +70,8 @@ export default function Dashboard() {
       const { data: theirSwipe } = await supabase.from('swipes').select('id').eq('swiper_id', profiles[current].id).eq('swiped_id', user.id).eq('direction', 'like').single()
       if (theirSwipe) {
         await supabase.from('matches').insert({ user1_id: user.id, user2_id: profiles[current].id })
-        alert(`🎬 It's a match with ${profiles[current].display_name}!`)
+        setMatchedProfile(profiles[current])
+        return
       }
     }
     setTimeout(() => { setSwiping(null); setCurrent(c => c + 1) }, 300)
@@ -78,6 +80,54 @@ export default function Dashboard() {
   if (loading) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
       <p className="text-xs uppercase tracking-widest text-gray-500">Loading...</p>
+    </main>
+  )
+
+  if (matchedProfile) return (
+    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6 text-center">
+      <div className="flex items-center justify-center gap-2 mb-8 opacity-20">
+        {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
+      </div>
+
+      <p className="text-xs uppercase tracking-widest text-gray-500 mb-4">It's a match</p>
+
+      <div className="flex items-center justify-center gap-4 mb-8">
+        {user?.imageUrl ? (
+          <img src={user.imageUrl} alt="You" className="w-20 h-20 rounded-full object-cover border-2 border-white" />
+        ) : (
+          <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-2xl">🎬</div>
+        )}
+        <p className="text-2xl text-gray-600">×</p>
+        {matchedProfile.avatar_url ? (
+          <img src={matchedProfile.avatar_url} alt={matchedProfile.display_name} className="w-20 h-20 rounded-full object-cover border-2 border-white" />
+        ) : (
+          <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-2xl">🎬</div>
+        )}
+      </div>
+
+      <h1 className="text-4xl font-black mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+        {matchedProfile.display_name}
+      </h1>
+      <p className="text-gray-500 mb-10 text-sm">You both liked each other</p>
+
+      <div className="flex flex-col gap-3 w-full max-w-xs">
+        <Link
+          href="/matches"
+          className="bg-white text-black px-8 py-4 text-xs uppercase tracking-widest font-bold hover:bg-gray-200 transition text-center"
+        >
+          Send a Message
+        </Link>
+        <button
+          onClick={() => { setMatchedProfile(null); setSwiping(null); setCurrent(c => c + 1) }}
+          className="border border-gray-700 px-8 py-4 text-xs uppercase tracking-widest text-gray-400 hover:border-white hover:text-white transition"
+        >
+          Keep Swiping
+        </button>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 mt-8 opacity-20">
+        {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
+      </div>
     </main>
   )
 
