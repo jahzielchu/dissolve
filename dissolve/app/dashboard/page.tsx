@@ -130,9 +130,13 @@ export default function Dashboard() {
                 <div className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-lg">🎬</div>
               )}
               <div>
-                <Link href={`/user/${profile.id}`} className="hover:underline">
+                <a 
+  href={`/user/${profile.id}`}
+  onClick={(e) => e.stopPropagation()}
+  className="hover:underline cursor-pointer"
+>
   <h2 className="font-black text-lg" style={{ fontFamily: 'Georgia, serif' }}>{profile.display_name}</h2>
-</Link>
+</a>
                 <p className="text-gray-500 text-xs tracking-wider">@{profile.letterboxd_username}</p>
               </div>
             </div>
