@@ -16,6 +16,7 @@ type Profile = {
   display_name: string
   compatibility: number
   topFilms: string[]
+  sharedFilms: string[]
   avatar_url: string | null
 }
 
@@ -38,25 +39,30 @@ export default function Dashboard() {
     setMyAvatar(myProfile?.avatar_url || null)
     const { data: swipes } = await supabase.from('swipes').select('swiped_id').eq('swiper_id', user!.id)
     const swipedIds = swipes?.map(s => s.swiped_id) || []
-    const { data: myFilms } = await supabase.from('user_films').select('slug, rating').eq('user_id', user!.id)
+    const { data: myFilms } = await supabase.from('user_films').select('slug, rating, title').eq('user_id', user!.id)
     const { data: otherProfiles } = await supabase.from('profiles').select('id, letterboxd_username, display_name, avatar_url').neq('id', user!.id)
     if (!otherProfiles) { setLoading(false); return }
 
     const profilesWithCompat = await Promise.all(
       otherProfiles.filter(p => !swipedIds.includes(p.id)).map(async (profile) => {
-        const { data: theirFilms } = await supabase.from('user_films').select('slug, rating').eq('user_id', profile.id)
-        const myMap = new Map(myFilms?.map(f => [f.slug, f.rating]) || [])
-        const theirMap = new Map(theirFilms?.map(f => [f.slug, f.rating]) || [])
+        const { data: theirFilms } = await supabase.from('user_films').select('slug, rating, title').eq('user_id', profile.id)
+        const myMap = new Map(myFilms?.map(f => [f.slug, { rating: f.rating, title: f.title }]) || [])
+        const theirMap = new Map(theirFilms?.map(f => [f.slug, { rating: f.rating, title: f.title }]) || [])
         let overlap = 0, total = 0
-        for (const [slug, myRating] of myMap) {
+        const sharedFilms: string[] = []
+
+        for (const [slug, myData] of myMap) {
           if (theirMap.has(slug)) {
-            overlap += Math.max(0, 5 - Math.abs(myRating - theirMap.get(slug)!)) / 5
+            const diff = Math.abs(myData.rating - theirMap.get(slug)!.rating)
+            overlap += Math.max(0, 5 - diff) / 5
             total++
+            if (diff <= 1) sharedFilms.push(myData.title)
           }
         }
+
         const compatibility = total > 0 ? Math.round((overlap / total) * 100) : 0
-        const topFilms = Array.from(theirMap.keys()).slice(0, 3).map(s => s.replace(/-/g, ' '))
-        return { ...profile, compatibility, topFilms, avatar_url: profile.avatar_url || null }
+        const topFilms = Array.from(theirMap.values()).slice(0, 3).map(f => f.title)
+        return { ...profile, compatibility, topFilms, sharedFilms: sharedFilms.slice(0, 3), avatar_url: profile.avatar_url || null }
       })
     )
 
@@ -91,9 +97,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-center gap-2 mb-8 opacity-20">
         {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
       </div>
-
       <p className="text-xs uppercase tracking-widest text-gray-500 mb-4">It's a match</p>
-
       <div className="flex items-center justify-center gap-4 mb-8">
         {myAvatar ? (
           <img src={myAvatar} alt="You" className="w-20 h-20 rounded-full object-cover border-2 border-white" />
@@ -107,17 +111,18 @@ export default function Dashboard() {
           <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-2xl">🎬</div>
         )}
       </div>
-
-      <h1 className="text-4xl font-black mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-        {matchedProfile.display_name}
-      </h1>
-      <p className="text-gray-500 mb-10 text-sm">You both liked each other</p>
-
+      <h1 className="text-4xl font-black mb-2" style={{ fontFamily: 'Georgia, serif' }}>{matchedProfile.display_name}</h1>
+      <p className="text-gray-500 mb-4 text-sm">You both liked each other</p>
+      {matchedProfile.sharedFilms.length > 0 && (
+        <div className="mb-8">
+          <p className="text-xs uppercase tracking-widest text-gray-600 mb-2">You both love</p>
+          {matchedProfile.sharedFilms.map((film, i) => (
+            <p key={i} className="text-gray-400 text-sm capitalize">🎬 {film}</p>
+          ))}
+        </div>
+      )}
       <div className="flex flex-col gap-3 w-full max-w-xs">
-        <Link
-          href="/matches"
-          className="bg-white text-black px-8 py-4 text-xs uppercase tracking-widest font-bold hover:bg-gray-200 transition text-center"
-        >
+        <Link href="/matches" className="bg-white text-black px-8 py-4 text-xs uppercase tracking-widest font-bold hover:bg-gray-200 transition text-center">
           Send a Message
         </Link>
         <button
@@ -127,7 +132,6 @@ export default function Dashboard() {
           Keep Swiping
         </button>
       </div>
-
       <div className="flex items-center justify-center gap-2 mt-8 opacity-20">
         {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
       </div>
@@ -144,12 +148,8 @@ export default function Dashboard() {
         <p className="text-2xl font-black" style={{ fontFamily: 'Georgia, serif' }}>No more profiles</p>
         <p className="text-gray-500 mt-2 text-sm">Check back later for new cinephiles</p>
         <div className="flex gap-4 justify-center mt-8">
-          <Link href="/matches" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">
-            View Matches
-          </Link>
-          <Link href="/profile" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">
-            Your Profile
-          </Link>
+          <Link href="/matches" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">View Matches</Link>
+          <Link href="/profile" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">Your Profile</Link>
         </div>
       </div>
     </main>
@@ -162,16 +162,11 @@ export default function Dashboard() {
       <div className="pointer-events-none fixed inset-0 z-10 opacity-[0.025]"
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`, backgroundRepeat: 'repeat', backgroundSize: '128px 128px' }}
       />
-
       <div className="relative z-20 w-full max-w-sm">
         <div className="flex items-center justify-between mb-8">
-          <Link href="/profile" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">
-            Profile
-          </Link>
+          <Link href="/profile" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">Profile</Link>
           <p className="text-xs uppercase tracking-widest text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Dissolve</p>
-          <Link href="/matches" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">
-            Matches
-          </Link>
+          <Link href="/matches" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">Matches</Link>
         </div>
 
         <div className={`border border-gray-800 rounded-none p-6 mb-8 transition-all duration-300 ${
@@ -204,15 +199,30 @@ export default function Dashboard() {
 
           <div className="border-t border-gray-800 mb-4" />
 
-          <div>
-            <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">Top Films</p>
-            <div className="flex flex-col gap-2">
-              {profile.topFilms.length > 0 ? profile.topFilms.map((film, i) => (
-                <p key={i} className="text-sm capitalize text-gray-300">
-                  <span className="text-gray-600 mr-2">{i + 1}.</span>{film}
-                </p>
-              )) : <p className="text-sm text-gray-600">No films yet</p>}
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">Top Films</p>
+              <div className="flex flex-col gap-2">
+                {profile.topFilms.length > 0 ? profile.topFilms.map((film, i) => (
+                  <p key={i} className="text-sm capitalize text-gray-300">
+                    <span className="text-gray-600 mr-2">{i + 1}.</span>{film}
+                  </p>
+                )) : <p className="text-sm text-gray-600">No films yet</p>}
+              </div>
             </div>
+
+            {profile.sharedFilms.length > 0 && (
+              <div className="border-t border-gray-800 pt-4">
+                <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">You Both Love</p>
+                <div className="flex flex-col gap-2">
+                  {profile.sharedFilms.map((film, i) => (
+                    <p key={i} className="text-sm capitalize text-white">
+                      🎬 {film}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
