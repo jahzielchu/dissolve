@@ -1,5 +1,5 @@
+cat > app/user/\[id\]/page.tsx << 'EOF'
 'use client'
-
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useParams, useRouter } from 'next/navigation'
@@ -24,23 +24,19 @@ export default function UserProfile() {
 
   async function loadProfile() {
     setLoading(true)
-
     const { data: profileData } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
-
     if (!profileData) { router.push('/dashboard'); return }
     setProfile(profileData)
-
     const { data: filmsData } = await supabase
       .from('user_films')
       .select('title, rating, slug')
       .eq('user_id', userId)
       .order('rating', { ascending: false })
       .limit(10)
-
     setFilms(filmsData || [])
     setLoading(false)
   }
@@ -54,13 +50,9 @@ export default function UserProfile() {
   return (
     <main className="flex min-h-screen flex-col bg-black text-white px-6 py-12">
       <div className="max-w-md w-full mx-auto">
-
-        {/* Back button */}
         <Link href="/dashboard" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition mb-12 inline-block">
           ← Back
         </Link>
-
-        {/* Profile header */}
         <div className="flex items-center gap-6 mb-8">
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt={profile.display_name} className="w-20 h-20 rounded-full object-cover grayscale" />
@@ -79,15 +71,11 @@ export default function UserProfile() {
             </a>
           </div>
         </div>
-
-        {/* Bio */}
         {profile.bio && (
           <div className="border border-gray-800 p-4 mb-8">
             <p className="text-gray-300 text-sm leading-relaxed">{profile.bio}</p>
           </div>
         )}
-
-        {/* Top films */}
         <div>
           <p className="text-xs uppercase tracking-widest text-gray-500 mb-4">Top Films</p>
           {films.length > 0 ? (
@@ -106,8 +94,8 @@ export default function UserProfile() {
             <p className="text-gray-600 text-sm">No films yet</p>
           )}
         </div>
-
       </div>
     </main>
   )
 }
+EOF
