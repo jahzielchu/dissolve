@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState<'left' | 'right' | null>(null)
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null)
+  const [myAvatar, setMyAvatar] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) loadProfiles()
@@ -33,6 +34,8 @@ export default function Dashboard() {
 
   async function loadProfiles() {
     setLoading(true)
+    const { data: myProfile } = await supabase.from('profiles').select('avatar_url').eq('id', user!.id).single()
+    setMyAvatar(myProfile?.avatar_url || null)
     const { data: swipes } = await supabase.from('swipes').select('swiped_id').eq('swiper_id', user!.id)
     const swipedIds = swipes?.map(s => s.swiped_id) || []
     const { data: myFilms } = await supabase.from('user_films').select('slug, rating').eq('user_id', user!.id)
@@ -92,8 +95,8 @@ export default function Dashboard() {
       <p className="text-xs uppercase tracking-widest text-gray-500 mb-4">It's a match</p>
 
       <div className="flex items-center justify-center gap-4 mb-8">
-        {user?.imageUrl ? (
-          <img src={user.imageUrl} alt="You" className="w-20 h-20 rounded-full object-cover border-2 border-white" />
+        {myAvatar ? (
+          <img src={myAvatar} alt="You" className="w-20 h-20 rounded-full object-cover border-2 border-white" />
         ) : (
           <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-2xl">🎬</div>
         )}
