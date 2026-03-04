@@ -52,7 +52,7 @@ export default function UserProfile() {
           )}
           <div>
             <h1 className="text-3xl font-black" style={{ fontFamily: 'Georgia, serif' }}>{profile.display_name}</h1>
-            <p className="text-gray-500 text-xs tracking-wider">@{profile.letterboxd_username}</p>
+            <a href={`https://letterboxd.com/${profile.letterboxd_username}`} target="_blank" rel="noopener noreferrer" className="text-gray-500 text-xs tracking-wider hover:text-white transition">@{profile.letterboxd_username}</a>
           </div>
         </div>
         {profile.bio && (
