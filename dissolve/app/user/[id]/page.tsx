@@ -75,7 +75,7 @@ export default function UserProfile() {
               rel="noopener noreferrer"
               className="text-gray-500 text-xs tracking-wider hover:text-white transition"
             >
-              @{profile.letterboxd_username} &rarr;↗
+              @{profile.letterboxd_username} →
             </a>
           </div>
         </div>
