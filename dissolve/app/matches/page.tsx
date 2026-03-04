@@ -100,7 +100,7 @@ export default function Matches() {
                 <div className="flex items-center gap-4">
                   <span className="text-gray-600 text-xs w-4">{i + 1}.</span>
                   {match.other_user.avatar_url ? (
-                    <img src={match.other_user.avatar_url} alt={match.other_user.display_name} className="w-10 h-10 rounded-full object-cover grayscale" />
+                    <img src={match.other_user.avatar_url} alt={match.other_user.display_name} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
                     <div className="w-10 h-10 rounded-full border border-gray-700 flex items-center justify-center text-sm">🎬</div>
                   )}

@@ -46,7 +46,7 @@ export default function UserProfile() {
         </Link>
         <div className="flex items-center gap-6 mb-8">
           {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt={profile.display_name} className="w-20 h-20 rounded-full object-cover grayscale" />
+            <img src={profile.avatar_url} alt={profile.display_name} className="w-20 h-20 rounded-full object-cover" />
           ) : (
             <div className="w-20 h-20 rounded-full border border-gray-700 flex items-center justify-center text-2xl">🎬</div>
           )}

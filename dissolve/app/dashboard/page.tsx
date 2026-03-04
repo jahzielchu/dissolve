@@ -128,7 +128,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover grayscale" />
+                <img src={profile.avatar_url} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover" />
               ) : (
                 <div className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-lg">🎬</div>
               )}

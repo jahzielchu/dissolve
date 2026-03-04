@@ -82,7 +82,7 @@ export default function Chat() {
         <Link href="/matches" className="text-gray-500 hover:text-white transition text-xs uppercase tracking-widest">← Back</Link>
         <div className="flex items-center gap-3">
           {otherUser?.avatar_url ? (
-            <img src={otherUser.avatar_url} alt={otherUser.display_name} className="w-8 h-8 rounded-full object-cover grayscale" />
+            <img src={otherUser.avatar_url} alt={otherUser.display_name} className="w-8 h-8 rounded-full object-cover" />
           ) : (
             <div className="w-8 h-8 rounded-full border border-gray-700 flex items-center justify-center text-xs">🎬</div>
           )}
