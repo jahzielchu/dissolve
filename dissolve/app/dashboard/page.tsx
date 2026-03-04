@@ -18,6 +18,7 @@ type Profile = {
   topFilms: string[]
   sharedFilms: string[]
   avatar_url: string | null
+  bio: string | null
 }
 
 export default function Dashboard() {
@@ -31,7 +32,6 @@ export default function Dashboard() {
   const [dragX, setDragX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const startX = useRef(0)
-  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (user) loadProfiles()
@@ -44,7 +44,7 @@ export default function Dashboard() {
     const { data: swipes } = await supabase.from('swipes').select('swiped_id').eq('swiper_id', user!.id)
     const swipedIds = swipes?.map(s => s.swiped_id) || []
     const { data: myFilms } = await supabase.from('user_films').select('slug, rating, title').eq('user_id', user!.id)
-    const { data: otherProfiles } = await supabase.from('profiles').select('id, letterboxd_username, display_name, avatar_url').neq('id', user!.id)
+    const { data: otherProfiles } = await supabase.from('profiles').select('id, letterboxd_username, display_name, avatar_url, bio').neq('id', user!.id)
     if (!otherProfiles) { setLoading(false); return }
 
     const profilesWithCompat = await Promise.all(
@@ -64,7 +64,7 @@ export default function Dashboard() {
         }
         const compatibility = total > 0 ? Math.round((overlap / total) * 100) : 0
         const topFilms = Array.from(theirMap.values()).slice(0, 3).map(f => f.title)
-        return { ...profile, compatibility, topFilms, sharedFilms: sharedFilms.slice(0, 3), avatar_url: profile.avatar_url || null }
+        return { ...profile, compatibility, topFilms, sharedFilms: sharedFilms.slice(0, 3), avatar_url: profile.avatar_url || null, bio: profile.bio || null }
       })
     )
 
@@ -86,7 +86,7 @@ export default function Dashboard() {
         return
       }
     }
-    setTimeout(() => { setSwiping(null); setCurrent(c => c + 1) }, 300)
+    setTimeout(() => { setSwiping(null); setCurrent(c => c + 1) }, 350)
   }
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -96,19 +96,14 @@ export default function Dashboard() {
 
   function handleTouchMove(e: React.TouchEvent) {
     if (!isDragging) return
-    const diff = e.touches[0].clientX - startX.current
-    setDragX(diff)
+    setDragX(e.touches[0].clientX - startX.current)
   }
 
   function handleTouchEnd() {
     setIsDragging(false)
-    if (dragX > 80) {
-      swipe('like')
-    } else if (dragX < -80) {
-      swipe('pass')
-    } else {
-      setDragX(0)
-    }
+    if (dragX > 80) swipe('like')
+    else if (dragX < -80) swipe('pass')
+    else setDragX(0)
   }
 
   function handleMouseDown(e: React.MouseEvent) {
@@ -118,89 +113,81 @@ export default function Dashboard() {
 
   function handleMouseMove(e: React.MouseEvent) {
     if (!isDragging) return
-    const diff = e.clientX - startX.current
-    setDragX(diff)
+    setDragX(e.clientX - startX.current)
   }
 
   function handleMouseUp() {
     setIsDragging(false)
-    if (dragX > 80) {
-      swipe('like')
-    } else if (dragX < -80) {
-      swipe('pass')
-    } else {
-      setDragX(0)
-    }
+    if (dragX > 80) swipe('like')
+    else if (dragX < -80) swipe('pass')
+    else setDragX(0)
   }
 
-  const rotation = dragX * 0.05
-  const likeOpacity = Math.min(dragX / 80, 1)
-  const passOpacity = Math.min(-dragX / 80, 1)
+  const rotation = dragX * 0.04
+  const likeOpacity = Math.min(Math.max(dragX / 80, 0), 1)
+  const passOpacity = Math.min(Math.max(-dragX / 80, 0), 1)
 
   if (loading) return (
-    <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <p className="text-xs uppercase tracking-widest text-gray-500">Loading...</p>
+    <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white">
+      <p className="text-xs uppercase tracking-widest text-gray-600">Loading...</p>
     </main>
   )
 
   if (matchedProfile) return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6 text-center">
-      <div className="flex items-center justify-center gap-2 mb-8 opacity-20">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0a] text-white px-6 text-center">
+      <div className="flex items-center justify-center gap-2 mb-10 opacity-20">
         {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
       </div>
-      <p className="text-xs uppercase tracking-widest text-gray-500 mb-4">It's a match</p>
+      <p className="text-xs uppercase tracking-widest text-gray-500 mb-6">It's a match</p>
       <div className="flex items-center justify-center gap-4 mb-8">
         {myAvatar ? (
-          <img src={myAvatar} alt="You" className="w-20 h-20 rounded-full object-cover border-2 border-white" />
+          <img src={myAvatar} alt="You" className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-2xl" />
         ) : (
-          <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-2xl">🎬</div>
+          <div className="w-24 h-24 rounded-full border-2 border-white flex items-center justify-center text-3xl">🎬</div>
         )}
-        <p className="text-2xl text-gray-600">×</p>
+        <p className="text-3xl text-gray-700">×</p>
         {matchedProfile.avatar_url ? (
-          <img src={matchedProfile.avatar_url} alt={matchedProfile.display_name} className="w-20 h-20 rounded-full object-cover border-2 border-white" />
+          <img src={matchedProfile.avatar_url} alt={matchedProfile.display_name} className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-2xl" />
         ) : (
-          <div className="w-20 h-20 rounded-full border-2 border-white flex items-center justify-center text-2xl">🎬</div>
+          <div className="w-24 h-24 rounded-full border-2 border-white flex items-center justify-center text-3xl">🎬</div>
         )}
       </div>
-      <h1 className="text-4xl font-black mb-2" style={{ fontFamily: 'Georgia, serif' }}>{matchedProfile.display_name}</h1>
-      <p className="text-gray-500 mb-4 text-sm">You both liked each other</p>
+      <h1 className="text-5xl font-black mb-2" style={{ fontFamily: 'Georgia, serif' }}>{matchedProfile.display_name}</h1>
+      <p className="text-gray-500 mb-6 text-sm">You both liked each other</p>
       {matchedProfile.sharedFilms.length > 0 && (
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-widest text-gray-600 mb-2">You both love</p>
+        <div className="mb-10 bg-white/5 rounded-2xl px-6 py-4">
+          <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">You both love</p>
           {matchedProfile.sharedFilms.map((film, i) => (
-            <p key={i} className="text-gray-400 text-sm capitalize">🎬 {film}</p>
+            <p key={i} className="text-gray-300 text-sm capitalize">🎬 {film}</p>
           ))}
         </div>
       )}
       <div className="flex flex-col gap-3 w-full max-w-xs">
-        <Link href="/matches" className="bg-white text-black px-8 py-4 text-xs uppercase tracking-widest font-bold hover:bg-gray-200 transition text-center">
+        <Link href="/matches" className="bg-white text-black px-8 py-4 rounded-full text-sm font-bold hover:bg-gray-200 transition text-center">
           Send a Message
         </Link>
         <button
           onClick={() => { setMatchedProfile(null); setSwiping(null); setCurrent(c => c + 1) }}
-          className="border border-gray-700 px-8 py-4 text-xs uppercase tracking-widest text-gray-400 hover:border-white hover:text-white transition"
+          className="border border-gray-700 px-8 py-4 rounded-full text-sm text-gray-400 hover:border-white hover:text-white transition"
         >
           Keep Swiping
         </button>
-      </div>
-      <div className="flex items-center justify-center gap-2 mt-8 opacity-20">
-        {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
       </div>
     </main>
   )
 
   if (current >= profiles.length) return (
-    <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <div className="text-center">
+    <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white">
+      <div className="text-center px-6">
         <div className="flex items-center justify-center gap-2 mb-8 opacity-20">
           {Array.from({ length: 8 }).map((_, i) => <div key={i} className="w-4 h-3 border border-white rounded-sm" />)}
         </div>
-        <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">End of reel</p>
-        <p className="text-2xl font-black" style={{ fontFamily: 'Georgia, serif' }}>No more profiles</p>
-        <p className="text-gray-500 mt-2 text-sm">Check back later for new cinephiles</p>
-        <div className="flex gap-4 justify-center mt-8">
-          <Link href="/matches" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">View Matches</Link>
-          <Link href="/profile" className="text-xs uppercase tracking-widest border border-gray-700 px-6 py-3 hover:border-white transition">Your Profile</Link>
+        <p className="text-xs uppercase tracking-widest text-gray-600 mb-3">End of reel</p>
+        <p className="text-3xl font-black mb-2" style={{ fontFamily: 'Georgia, serif' }}>No more profiles</p>
+        <p className="text-gray-600 mt-2 text-sm">Check back later for new cinephiles</p>
+        <div className="flex gap-3 justify-center mt-8">
+          <Link href="/matches" className="text-sm border border-gray-800 px-6 py-3 rounded-full hover:border-white transition text-gray-400 hover:text-white">View Matches</Link>
+          <Link href="/profile" className="text-sm border border-gray-800 px-6 py-3 rounded-full hover:border-white transition text-gray-400 hover:text-white">Your Profile</Link>
         </div>
       </div>
     </main>
@@ -209,55 +196,76 @@ export default function Dashboard() {
   const profile = profiles[current]
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden px-6">
-      <div className="pointer-events-none fixed inset-0 z-10 opacity-[0.025]"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`, backgroundRepeat: 'repeat', backgroundSize: '128px 128px' }}
-      />
-      <div className="relative z-20 w-full max-w-sm">
-        <div className="flex items-center justify-between mb-8">
-          <Link href="/profile" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">Profile</Link>
-          <p className="text-xs uppercase tracking-widest text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Dissolve</p>
-          <Link href="/matches" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">Matches</Link>
-        </div>
+    <main className="flex min-h-screen flex-col bg-[#0a0a0a] text-white">
+      {/* Nav */}
+      <div className="flex items-center justify-between px-6 pt-8 pb-4">
+        <Link href="/profile">
+          {myAvatar ? (
+            <img src={myAvatar} alt="You" className="w-9 h-9 rounded-full object-cover border border-gray-700" />
+          ) : (
+            <div className="w-9 h-9 rounded-full border border-gray-700 flex items-center justify-center text-sm">🎬</div>
+          )}
+        </Link>
+        <p className="text-sm font-black tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>Dissolve</p>
+        <Link href="/matches" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">
+          Matches
+        </Link>
+      </div>
 
-        <div
-          ref={cardRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className="border border-gray-800 rounded-none p-6 mb-8 cursor-grab active:cursor-grabbing select-none"
-          style={{
-            transform: swiping
-              ? `translateX(${swiping === 'right' ? '120px' : '-120px'}) rotate(${swiping === 'right' ? '8deg' : '-8deg'})`
-              : `translateX(${dragX}px) rotate(${rotation}deg)`,
-            opacity: swiping ? 0 : 1,
-            transition: isDragging ? 'none' : 'all 0.3s ease',
-          }}
-        >
-          {/* Like / Pass indicators */}
-          <div className="absolute top-6 left-6 border-2 border-green-400 text-green-400 text-xs uppercase tracking-widest px-2 py-1 rotate-[-12deg]"
-            style={{ opacity: likeOpacity }}>
-            Like
-          </div>
-          <div className="absolute top-6 right-6 border-2 border-red-400 text-red-400 text-xs uppercase tracking-widest px-2 py-1 rotate-[12deg]"
-            style={{ opacity: passOpacity }}>
-            Pass
-          </div>
+      {/* Card */}
+      <div className="flex-1 flex items-center justify-center px-4 pb-8">
+        <div className="w-full max-w-sm">
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className="relative rounded-3xl overflow-hidden bg-[#111] cursor-grab active:cursor-grabbing select-none shadow-2xl"
+            style={{
+              transform: swiping
+                ? `translateX(${swiping === 'right' ? '150px' : '-150px'}) rotate(${swiping === 'right' ? '10deg' : '-10deg'})`
+                : `translateX(${dragX}px) rotate(${rotation}deg)`,
+              opacity: swiping ? 0 : 1,
+              transition: isDragging ? 'none' : 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            }}
+          >
+            {/* Like / Pass stamps */}
+            <div className="absolute top-8 left-6 z-20 border-4 border-green-400 text-green-400 text-lg font-black uppercase tracking-widest px-3 py-1 rotate-[-15deg] rounded"
+              style={{ opacity: likeOpacity }}>
+              Like
+            </div>
+            <div className="absolute top-8 right-6 z-20 border-4 border-red-400 text-red-400 text-lg font-black uppercase tracking-widest px-3 py-1 rotate-[15deg] rounded"
+              style={{ opacity: passOpacity }}>
+              Pass
+            </div>
 
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
+            {/* Big profile photo */}
+            <div className="relative w-full h-80 bg-gray-900">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.display_name} className="w-12 h-12 rounded-full object-cover" />
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.display_name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <div className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-lg">🎬</div>
+                <div className="w-full h-full flex items-center justify-center text-6xl">🎬</div>
               )}
-              <div>
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-transparent to-transparent" />
+              {/* Match % badge */}
+              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1">
+                <p className="text-white text-sm font-bold">{profile.compatibility}% match</p>
+              </div>
+            </div>
+
+            {/* Card content */}
+            <div className="px-5 pb-6 pt-2">
+              <div className="mb-3">
                 <h2
-                  className="font-black text-lg cursor-pointer hover:underline"
+                  className="text-2xl font-black cursor-pointer"
                   style={{ fontFamily: 'Georgia, serif' }}
                   onClick={() => window.location.href = `/user/${profile.id}`}
                 >
@@ -265,52 +273,50 @@ export default function Dashboard() {
                 </h2>
                 <p className="text-gray-500 text-xs tracking-wider">@{profile.letterboxd_username}</p>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-black" style={{ fontFamily: 'Georgia, serif' }}>{profile.compatibility}%</p>
-              <p className="text-gray-500 text-xs uppercase tracking-wider">match</p>
-            </div>
-          </div>
 
-          <div className="border-t border-gray-800 mb-4" />
+              {profile.bio && (
+                <p className="text-gray-300 text-sm leading-relaxed mb-4">{profile.bio}</p>
+              )}
 
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">Top Films</p>
-              <div className="flex flex-col gap-2">
-                {profile.topFilms.length > 0 ? profile.topFilms.map((film, i) => (
-                  <p key={i} className="text-sm capitalize text-gray-300">
-                    <span className="text-gray-600 mr-2">{i + 1}.</span>{film}
-                  </p>
-                )) : <p className="text-sm text-gray-600">No films yet</p>}
-              </div>
-            </div>
-            {profile.sharedFilms.length > 0 && (
-              <div className="border-t border-gray-800 pt-4">
-                <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">You Both Love</p>
-                <div className="flex flex-col gap-2">
-                  {profile.sharedFilms.map((film, i) => (
-                    <p key={i} className="text-sm capitalize text-white">🎬 {film}</p>
+              <div className="border-t border-gray-800 pt-4 mb-3">
+                <p className="text-gray-600 text-xs uppercase tracking-widest mb-2">Top Films</p>
+                <div className="flex flex-col gap-1">
+                  {profile.topFilms.map((film, i) => (
+                    <p key={i} className="text-sm capitalize text-gray-300">
+                      <span className="text-gray-600 mr-2">{i + 1}.</span>{film}
+                    </p>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        <div className="flex gap-4 justify-center">
-          <button
-            onClick={() => swipe('pass')}
-            className="flex-1 py-4 border border-gray-800 text-xs uppercase tracking-widest text-gray-500 hover:border-red-900 hover:text-red-400 transition"
-          >
-            Pass
-          </button>
-          <button
-            onClick={() => swipe('like')}
-            className="flex-1 py-4 border border-gray-800 text-xs uppercase tracking-widest text-gray-500 hover:border-white hover:text-white transition"
-          >
-            Like
-          </button>
+              {profile.sharedFilms.length > 0 && (
+                <div className="bg-white/5 rounded-xl px-4 py-3">
+                  <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">You Both Love</p>
+                  <div className="flex flex-col gap-1">
+                    {profile.sharedFilms.map((film, i) => (
+                      <p key={i} className="text-sm capitalize text-white">🎬 {film}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-4 justify-center mt-6">
+            <button
+              onClick={() => swipe('pass')}
+              className="w-16 h-16 rounded-full border-2 border-gray-700 flex items-center justify-center text-2xl hover:border-red-400 hover:text-red-400 transition bg-[#0a0a0a]"
+            >
+              ✕
+            </button>
+            <button
+              onClick={() => swipe('like')}
+              className="w-16 h-16 rounded-full border-2 border-gray-700 flex items-center justify-center text-2xl hover:border-white hover:text-white transition bg-[#0a0a0a]"
+            >
+              ♥
+            </button>
+          </div>
         </div>
       </div>
     </main>
