@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
@@ -28,6 +28,10 @@ export default function Dashboard() {
   const [swiping, setSwiping] = useState<'left' | 'right' | null>(null)
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [dragX, setDragX] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const startX = useRef(0)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (user) loadProfiles()
@@ -50,7 +54,6 @@ export default function Dashboard() {
         const theirMap = new Map(theirFilms?.map(f => [f.slug, { rating: f.rating, title: f.title }]) || [])
         let overlap = 0, total = 0
         const sharedFilms: string[] = []
-
         for (const [slug, myData] of myMap) {
           if (theirMap.has(slug)) {
             const diff = Math.abs(myData.rating - theirMap.get(slug)!.rating)
@@ -59,7 +62,6 @@ export default function Dashboard() {
             if (diff <= 1) sharedFilms.push(myData.title)
           }
         }
-
         const compatibility = total > 0 ? Math.round((overlap / total) * 100) : 0
         const topFilms = Array.from(theirMap.values()).slice(0, 3).map(f => f.title)
         return { ...profile, compatibility, topFilms, sharedFilms: sharedFilms.slice(0, 3), avatar_url: profile.avatar_url || null }
@@ -74,6 +76,7 @@ export default function Dashboard() {
   async function swipe(direction: 'like' | 'pass') {
     if (!profiles[current] || !user) return
     setSwiping(direction === 'like' ? 'right' : 'left')
+    setDragX(0)
     await supabase.from('swipes').insert({ swiper_id: user.id, swiped_id: profiles[current].id, direction })
     if (direction === 'like') {
       const { data: theirSwipe } = await supabase.from('swipes').select('id').eq('swiper_id', profiles[current].id).eq('swiped_id', user.id).eq('direction', 'like').single()
@@ -85,6 +88,54 @@ export default function Dashboard() {
     }
     setTimeout(() => { setSwiping(null); setCurrent(c => c + 1) }, 300)
   }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    startX.current = e.touches[0].clientX
+    setIsDragging(true)
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!isDragging) return
+    const diff = e.touches[0].clientX - startX.current
+    setDragX(diff)
+  }
+
+  function handleTouchEnd() {
+    setIsDragging(false)
+    if (dragX > 80) {
+      swipe('like')
+    } else if (dragX < -80) {
+      swipe('pass')
+    } else {
+      setDragX(0)
+    }
+  }
+
+  function handleMouseDown(e: React.MouseEvent) {
+    startX.current = e.clientX
+    setIsDragging(true)
+  }
+
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!isDragging) return
+    const diff = e.clientX - startX.current
+    setDragX(diff)
+  }
+
+  function handleMouseUp() {
+    setIsDragging(false)
+    if (dragX > 80) {
+      swipe('like')
+    } else if (dragX < -80) {
+      swipe('pass')
+    } else {
+      setDragX(0)
+    }
+  }
+
+  const rotation = dragX * 0.05
+  const likeOpacity = Math.min(dragX / 80, 1)
+  const passOpacity = Math.min(-dragX / 80, 1)
 
   if (loading) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -169,10 +220,34 @@ export default function Dashboard() {
           <Link href="/matches" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition">Matches</Link>
         </div>
 
-        <div className={`border border-gray-800 rounded-none p-6 mb-8 transition-all duration-300 ${
-          swiping === 'right' ? 'translate-x-24 opacity-0' :
-          swiping === 'left' ? '-translate-x-24 opacity-0' : ''
-        }`}>
+        <div
+          ref={cardRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className="border border-gray-800 rounded-none p-6 mb-8 cursor-grab active:cursor-grabbing select-none"
+          style={{
+            transform: swiping
+              ? `translateX(${swiping === 'right' ? '120px' : '-120px'}) rotate(${swiping === 'right' ? '8deg' : '-8deg'})`
+              : `translateX(${dragX}px) rotate(${rotation}deg)`,
+            opacity: swiping ? 0 : 1,
+            transition: isDragging ? 'none' : 'all 0.3s ease',
+          }}
+        >
+          {/* Like / Pass indicators */}
+          <div className="absolute top-6 left-6 border-2 border-green-400 text-green-400 text-xs uppercase tracking-widest px-2 py-1 rotate-[-12deg]"
+            style={{ opacity: likeOpacity }}>
+            Like
+          </div>
+          <div className="absolute top-6 right-6 border-2 border-red-400 text-red-400 text-xs uppercase tracking-widest px-2 py-1 rotate-[12deg]"
+            style={{ opacity: passOpacity }}>
+            Pass
+          </div>
+
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               {profile.avatar_url ? (
@@ -210,15 +285,12 @@ export default function Dashboard() {
                 )) : <p className="text-sm text-gray-600">No films yet</p>}
               </div>
             </div>
-
             {profile.sharedFilms.length > 0 && (
               <div className="border-t border-gray-800 pt-4">
                 <p className="text-gray-600 text-xs uppercase tracking-widest mb-3">You Both Love</p>
                 <div className="flex flex-col gap-2">
                   {profile.sharedFilms.map((film, i) => (
-                    <p key={i} className="text-sm capitalize text-white">
-                      🎬 {film}
-                    </p>
+                    <p key={i} className="text-sm capitalize text-white">🎬 {film}</p>
                   ))}
                 </div>
               </div>
