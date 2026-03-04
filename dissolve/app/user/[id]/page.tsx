@@ -1,4 +1,5 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useParams, useRouter } from 'next/navigation'
@@ -23,19 +24,10 @@ export default function UserProfile() {
 
   async function loadProfile() {
     setLoading(true)
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).single()
     if (!profileData) { router.push('/dashboard'); return }
     setProfile(profileData)
-    const { data: filmsData } = await supabase
-      .from('user_films')
-      .select('title, rating, slug')
-      .eq('user_id', userId)
-      .order('rating', { ascending: false })
-      .limit(10)
+    const { data: filmsData } = await supabase.from('user_films').select('title, rating, slug').eq('user_id', userId).order('rating', { ascending: false }).limit(10)
     setFilms(filmsData || [])
     setLoading(false)
   }
@@ -50,7 +42,7 @@ export default function UserProfile() {
     <main className="flex min-h-screen flex-col bg-black text-white px-6 py-12">
       <div className="max-w-md w-full mx-auto">
         <Link href="/dashboard" className="text-xs uppercase tracking-widest text-gray-500 hover:text-white transition mb-12 inline-block">
-          ← Back
+          Back
         </Link>
         <div className="flex items-center gap-6 mb-8">
           {profile.avatar_url ? (
@@ -60,14 +52,7 @@ export default function UserProfile() {
           )}
           <div>
             <h1 className="text-3xl font-black" style={{ fontFamily: 'Georgia, serif' }}>{profile.display_name}</h1>
-            
-              href={`https://letterboxd.com/${profile.letterboxd_username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-500 text-xs tracking-wider hover:text-white transition"
-            >
-              @{profile.letterboxd_username} →
-            </a>
+            <p className="text-gray-500 text-xs tracking-wider">@{profile.letterboxd_username}</p>
           </div>
         </div>
         {profile.bio && (
